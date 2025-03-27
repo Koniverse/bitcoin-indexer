@@ -8,8 +8,9 @@ import {
   OffsetSchema,
   BalanceResponseSchema,
   ActivityResponseSchema,
+  RuneUTXOResponseSchema,
 } from '../schemas';
-import { parseActivityResponse, parseBalanceResponse } from '../util/helpers';
+import { parseActivityResponse, parseBalanceResponse, parseRuneUTXOResponse } from '../util/helpers';
 import { Optional, PaginatedResponse } from '@hirosystems/api-toolkit';
 import { handleCache } from '../util/cache';
 
@@ -47,7 +48,7 @@ export const AddressRoutes: FastifyPluginCallback<
       await reply.send({
         limit,
         offset,
-        total: results.total,
+        total: results?.total ?? 0,
         results: results.results.map(r => parseBalanceResponse(r)),
       });
     }
@@ -86,5 +87,33 @@ export const AddressRoutes: FastifyPluginCallback<
     }
   );
 
+  fastify.get(
+    '/addresses/:address/utxo',
+    {
+      schema: {
+        operationId: 'getAddressRuneUtxo',
+        summary: 'Address Rune UTXO',
+        description: 'Retrieves a paginated list of Rune utxo for an address',
+        tags: ['Balances'],
+        params: Type.Object({
+          address: AddressSchema,
+        }),
+        querystring: Type.Object({
+        }),
+        response: {
+          200: PaginatedResponse(RuneUTXOResponseSchema, 'Paginated balances response'),
+        },
+      },
+    },
+    async (request, reply) => {
+      const results = await fastify.db.getAddressRuneUtxo(request.params.address);
+      await reply.send({
+        limit: results.results.length | 0,
+        offset: 0,
+        total: results.total,
+        results: results.results.map(r => parseRuneUTXOResponse(r)),
+      });
+    }
+  );
   done();
 };

@@ -1,6 +1,6 @@
 import BigNumber from 'bignumber.js';
-import { DbBalance, DbItemWithRune, DbLedgerEntry, DbRuneWithChainTip } from '../../pg/types';
-import { EtchingResponse, ActivityResponse, BalanceResponse } from '../schemas';
+import { DbBalance, DbItemWithRune, DbLedgerEntry, DbRuneWithChainTip, DbRuneUTXO } from '../../pg/types';
+import { EtchingResponse, ActivityResponse, BalanceResponse, RuneUTXOResponse } from '../schemas';
 
 function divisibility(num: string | BigNumber, decimals: number): string {
   return new BigNumber(num).shiftedBy(-1 * decimals).toFixed(decimals);
@@ -98,5 +98,21 @@ export function parseBalanceResponse(item: DbItemWithRune<DbBalance>): BalanceRe
     },
     address: item.address,
     balance: divisibility(item.balance, item.divisibility),
+  };
+}
+
+export function parseRuneUTXOResponse(item: DbRuneUTXO): RuneUTXOResponse {
+  return {
+    height: item.status.block_height,
+    txid: item.txid,
+    vout: item.vout ?? undefined,
+    satoshi: item.value,
+    runes: {
+      rune_id: item.runes.rune_id,
+      amount: item.runes.amount,
+      name: item.runes.name,
+      divisibility: item.runes.divisibility,
+      spaced_name: item.runes.spaced_name,
+    },
   };
 }

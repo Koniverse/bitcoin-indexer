@@ -384,3 +384,58 @@ export const NotFoundResponse = Type.Object(
   },
   { title: 'Not Found Response' }
 );
+
+export const RuneUTXOResponseSchema = Type.Object({
+  height: Type.Optional(
+    Type.Integer({
+      title: 'Block Height',
+      description: 'Height of the block containing this transaction',
+      examples: [840063],
+    })
+  ),
+  address: Type.Optional(
+    Type.String({
+      title: 'Address',
+      description: 'Bitcoin address which initiated this activity',
+      examples: ['bc1qg4sfmp3s6wwyh577hafrpvju7xl9g4xstqyxcn'],
+    })
+  ),
+  satoshi: Type.Optional(
+    Type.Integer({
+      title: 'Satoshi',
+      description: 'Value in satoshis of this UTXO',
+      examples: [546],
+    })
+  ),
+  scriptPk: Type.Optional(
+    Type.String({
+      title: 'Script Public Key',
+      description: 'Script public key of the UTXO',
+      examples: ['001445609d8630d39c4bd3debf5230b25cf1be5454d0'],
+    })
+  ),
+  txid: Type.String({
+    title: 'Transaction ID',
+    description: 'Bitcoin transaction ID',
+    examples: ['3144fd4aee01239f7d52b14d348b81448b8e07e840863c5dbf4f49500309a09c'],
+  }),
+  vout: Type.Optional(
+    Type.Integer({
+      title: 'Output Number',
+      description: 'Bitcoin transaction output number',
+      examples: [0],
+    })
+  ),
+  runes: Type.Object({
+    rune_id: Type.String(),
+    amount: Type.Union([Type.String(), Type.Null()]),
+    name: Type.String(),
+    divisibility: Type.Integer(),
+    spaced_name: Type.String(),
+  }, {
+    title: 'Runes',
+    description: 'List of runes associated with this UTXO',
+  }),
+});
+
+export type RuneUTXOResponse = Static<typeof RuneUTXOResponseSchema>;

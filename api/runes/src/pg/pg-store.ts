@@ -13,6 +13,7 @@ import {
   DbLedgerEntry,
   DbPaginatedResult,
   DbRuneWithChainTip,
+  DbRuneUTXO,
 } from './types';
 import {
   Address,
@@ -161,6 +162,28 @@ export class PgStore extends BasePgStore {
     };
   }
 
+  private async getOperationActivityRune(
+    filter: PgSqlQuery,
+    count: PgSqlQuery,
+    cte?: PgSqlQuery
+  ): Promise<DbPaginatedResult<DbItemWithRune<DbLedgerEntry>>> {
+    const results = await this.sql<DbCountedQueryResult<DbItemWithRune<DbLedgerEntry>>[]>`
+      WITH ${cte ? cte : this.sql`none AS (SELECT NULL)`},
+      results AS (
+        SELECT l.*, r.name, r.number, r.spaced_name, r.divisibility, ${count} AS total
+        FROM ledger AS l
+        INNER JOIN runes AS r ON r.id = l.rune_id
+        WHERE ${filter}
+      )
+      SELECT * FROM results
+      ORDER BY block_height DESC, tx_index DESC, event_index DESC
+    `;
+    return {
+      total: results[0]?.total ?? 0,
+      results,
+    };
+  }
+
   async getRuneActivity(runeId: Rune, offset: Offset, limit: Limit) {
     return this.getActivity(
       runeFilter(this.sql, runeId, 'r'),
@@ -275,6 +298,73 @@ export class PgStore extends BasePgStore {
     `;
     return {
       total: results[0]?.total ?? 0,
+      results,
+    };
+  }
+
+  private async getUtxoAddress(address: Address): Promise<any | undefined> {
+    try {
+      const response = await fetch(`https://blockstream.info/api/address/${address}/utxo`);
+  
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+  
+      const data = await response.json();
+      return data;
+  
+    } catch (error) {
+      return error;
+    }
+  }
+
+  async getAddressRuneUtxo(
+    address: Address,
+  ): Promise<DbPaginatedResult<DbRuneUTXO>> {
+    const getRuneActivityAddress = await this.getOperationActivityRune(
+      this.sql`address = ${address}`,
+      this.sql`COALESCE((SELECT total_operations FROM count), 0)`,
+      this.sql`recent AS (
+        SELECT DISTINCT ON (rune_id) total_operations
+        FROM balance_changes
+        WHERE address = ${address}
+        ORDER BY rune_id, block_height DESC
+      ),
+      count AS (
+        SELECT SUM(total_operations) AS total_operations FROM recent
+      )`
+    )?? { total: 0, results: [] };
+
+    const utxoMap = new Map<string, DbRuneUTXO>();
+    const results: DbRuneUTXO[] = [];
+    const listUtxoAddress = await this.getUtxoAddress(address) || [];
+    for (const utxo of listUtxoAddress) {
+      utxoMap.set(utxo.txid, utxo);
+    }
+
+    for (const result of getRuneActivityAddress.results) {
+      if(result.operation === 'receive') {
+        if(utxoMap.has(result.tx_id)) {
+          const utxo = utxoMap.get(result.tx_id);
+          if (utxo) {
+
+            const rune = {
+              ...result,
+              amount: result.amount === null ? null : String(result.amount)
+            };
+
+            results.push({
+              ...utxo,
+              value: utxo.value,
+              runes: rune,
+              });
+          }
+        }
+      }
+    }
+
+    return {
+      total: results.length ?? 0,
       results,
     };
   }

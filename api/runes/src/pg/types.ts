@@ -65,3 +65,22 @@ export type DbBalance = {
   balance: string;
   total_operations: number;
 };
+
+export type DbRuneUTXO = {
+  txid: string;
+  vout: number;
+  status: {
+    confirmed: boolean;
+    block_height: number;
+    block_hash: string;
+    block_time: number;
+  };
+  value: number;
+  runes: {
+    rune_id: string;
+    amount: string | null;
+    name: string;
+    divisibility: number;
+    spaced_name: string;
+  };
+  };
