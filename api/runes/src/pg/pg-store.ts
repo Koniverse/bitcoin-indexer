@@ -304,7 +304,7 @@ export class PgStore extends BasePgStore {
 
   private async getUtxoAddress(address: Address): Promise<any | undefined> {
     try {
-      const response = await fetch(`https://blockstream.info/api/address/${address}/utxo`);
+      const response = await fetch(`${ENV.DOMAIN_BLOCKSTREAM}/address/${address}/utxo`);
   
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);

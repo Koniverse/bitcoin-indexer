@@ -9,17 +9,20 @@ const schema = Type.Object({
   /** Port in which to serve the Admin RPC interface */
   ADMIN_RPC_PORT: Type.Number({ default: 3001, minimum: 0, maximum: 65535 }),
 
-  RUNES_PGHOST: Type.String(),
-  RUNES_PGPORT: Type.Number({ default: 5432, minimum: 0, maximum: 65535 }),
-  RUNES_PGUSER: Type.String(),
-  RUNES_PGPASSWORD: Type.String(),
-  RUNES_PGDATABASE: Type.String(),
+  RUNES_PGHOST: Type.String({ default: '0.0.0.0' }),
+  RUNES_PGPORT: Type.Number({ default: 8336, minimum: 0, maximum: 65535 }),
+  RUNES_PGUSER: Type.String({ default: 'postgres' }),
+  RUNES_PGPASSWORD: Type.String({ default: 'postgres' }),
+  RUNES_PGDATABASE: Type.String({ default: 'postgres' }),
 
   /** Limit to how many concurrent connections can be created */
   PG_CONNECTION_POOL_MAX: Type.Number({ default: 10 }),
   PG_IDLE_TIMEOUT: Type.Number({ default: 30 }),
   PG_MAX_LIFETIME: Type.Number({ default: 60 }),
   PG_STATEMENT_TIMEOUT: Type.Number({ default: 60_000 }),
+
+  /** Domain for Blockstream API */
+  DOMAIN_BLOCKSTREAM: Type.String({ default: 'https://blockstream.info/api' }),
 });
 type Env = Static<typeof schema>;
 
